@@ -1,0 +1,12 @@
+import from_to_binary
+import Codification
+import Modulation
+import Graph_Generation
+
+def main():
+    # Example usage of the functions
+    Graph_Generation.generate_graph_ASK("1101001110010110")
+    Graph_Generation.generate_graph_QPSK("1101001110010110")
+
+if __name__ == "__main__":
+    main()

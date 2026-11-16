@@ -1,0 +1,84 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import Codification
+import Modulation
+
+
+def generate_graph_manchester(string):
+    if len(string) < 16:
+        return "String is too short, please enter a string with more than 16 characters."
+    for bit in string:
+        if bit != '0' and bit != '1':
+            return "Invalid input, please enter a binary string."
+
+    bits = [int(bit) for bit in string]
+    signal = Codification.generate_manchester_signal(string)
+    times = []
+    for i in range(len(bits)):
+        times.extend([i, i + 0.5])
+
+    times.append(len(bits))
+    signal = np.append(signal, signal[-1])
+    fig, ax = plt.subplots(figsize=(12, 4))
+    ax.step(times, signal, where='post', linewidth=2)
+    ax.set_title("Manchester Encoding")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Amplitude (V)")
+    ax.set_ylim(-1.2, 1.2)
+    ax.set_yticks([-1, 0, 1])
+    ax.set_xticks(range(len(bits) + 1))
+    ax.grid(True, linestyle='--', alpha=0.5)
+    plt.show()
+    return None
+
+def generate_graph_ASK(string):
+    if len(string) < 16:
+        return "String is too short, please enter a string with more than 16 characters."
+
+    for i in range(len(string)):
+        if string[i] != '0' and string[i] != '1':
+            return "Invalid input, please enter a binary string."
+
+    signal = Modulation.generate_ASK_modulated_signal(string)
+    times = np.linspace(0, len(string), len(signal), endpoint=False)
+
+    fig, ax = plt.subplots(figsize=(20, 4))
+    ax.plot(times, signal, linewidth=1.5)
+    ax.set_title("ASK Modulation")
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Amplitude (V)")
+    ax.set_ylim(-1.2, 1.2)
+    ax.set_xticks(np.arange(len(string) + 1))
+    ax.grid(True, linestyle='--', alpha=0.5)
+    plt.show()
+    return None
+
+
+def generate_graph_QPSK(string):
+    if len(string) < 16:
+        return "String is too short, please enter a string with more than 16 characters."
+    for i in range(len(string)):
+        if string[i] != '0' and string[i] != '1':
+            return "Invalid input, please enter a binary string."
+
+    if len(string) % 2 != 0:
+        string += '0'
+    signal = Modulation.generate_QPSK_modulated_signal(string)
+    number_of_symbols = len(string) // 2
+    times = np.linspace(
+        0,
+        number_of_symbols,
+        len(signal),
+        endpoint=False
+    )
+
+    fig, ax = plt.subplots(figsize=(20, 4))
+    ax.plot(times, signal, linewidth=1.5)
+    ax.set_title("QPSK Modulation")
+    ax.set_xlabel("Time (Symbols)")
+    ax.set_ylabel("Amplitude (V)")
+    ax.set_ylim(-1.2, 1.2)
+    ax.set_xticks(np.arange(number_of_symbols + 1))
+    ax.grid(True, linestyle='--', alpha=0.5)
+    plt.show()
+    return None
