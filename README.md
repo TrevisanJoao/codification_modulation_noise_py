@@ -121,5 +121,5 @@ Para uma conversão de ida e volta previsível, use texto ASCII, sem acentos ou 
 ## Problemas comuns
 
 - **`ModuleNotFoundError` para `numpy` ou `matplotlib`:** ative o ambiente virtual e execute novamente `python -m pip install numpy matplotlib`.
-- **O gráfico não aparece:** a exibição em janelas precisa de um ambiente gráfico e de um backend interativo do Matplotlib. Em servidores ou terminais sem interface gráfica, salve a figura em um arquivo substituindo `plt.show()` por `plt.savefig("grafico.png")` na função desejada em `Graph_Generation.py`.
+- **O gráfico não aparece em uma janela:** a exibição em janelas precisa de um ambiente gráfico e de um backend interativo do Matplotlib. Quando o backend é `Agg`, as funções de gráfico salvam automaticamente arquivos PNG na pasta de execução e mostram o nome no terminal: `manchester.png`, `nrz_polar.png`, `ask.png`, `bpsk.png`, `qpsk.png` ou `16qam.png`. Uma nova execução substitui o arquivo correspondente.
 - **Nenhum gráfico aparece com uma nova sequência:** confira se ela contém apenas `0` e `1` e tem pelo menos 16 bits. Imprima o retorno da função para conferir a mensagem de validação.

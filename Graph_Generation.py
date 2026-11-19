@@ -4,6 +4,15 @@ import Codification
 import Modulation
 
 
+def _show_or_save(figure, filename):
+    if plt.get_backend().lower() == "agg":
+        figure.savefig(filename, bbox_inches="tight")
+        plt.close(figure)
+        print(f"Backend Agg: gráfico salvo em {filename}")
+    else:
+        plt.show()
+
+
 def generate_graph_manchester(string):
     if len(string) < 16:
         return "String is too short, please enter a string with more than 16 characters."
@@ -19,7 +28,7 @@ def generate_graph_manchester(string):
 
     times.append(len(bits))
     signal = np.append(signal, signal[-1])
-    _, ax = plt.subplots(figsize=(12, 4))
+    figure, ax = plt.subplots(figsize=(12, 4))
     ax.step(times, signal, where='post', linewidth=2)
     ax.set_title("Manchester Encoding")
     ax.set_xlabel("Time")
@@ -28,7 +37,7 @@ def generate_graph_manchester(string):
     ax.set_yticks([-1, 0, 1])
     ax.set_xticks(range(len(bits) + 1))
     ax.grid(True, linestyle='--', alpha=0.5)
-    plt.show()
+    _show_or_save(figure, "manchester.png")
     return None
 
 def generate_graph_NRZ_Polar(string):
@@ -46,7 +55,7 @@ def generate_graph_NRZ_Polar(string):
 
     times.append(len(bits))
     signal = np.append(signal, signal[-1])
-    _, ax = plt.subplots(figsize=(12, 4))
+    figure, ax = plt.subplots(figsize=(12, 4))
     ax.step(times, signal, where='post', linewidth=2)
     ax.set_title("NRZ-Polar Encoding")
     ax.set_xlabel("Time")
@@ -55,7 +64,7 @@ def generate_graph_NRZ_Polar(string):
     ax.set_yticks([-1, 0, 1])
     ax.set_xticks(range(len(bits) + 1))
     ax.grid(True, linestyle='--', alpha=0.5)
-    plt.show()
+    _show_or_save(figure, "nrz_polar.png")
     return None
 
 def generate_graph_ASK(string):
@@ -66,10 +75,11 @@ def generate_graph_ASK(string):
         if string[i] != '0' and string[i] != '1':
             return "Invalid input, please enter a binary string."
 
-    signal = Modulation.generate_ASK_modulated_signal(string)
+    encoded = Codification.generate_nrz_polar_signal(string)
+    signal = Modulation.generate_ASK_modulated_signal(encoded)
     times = np.linspace(0, len(string), len(signal), endpoint=False)
 
-    _, ax = plt.subplots(figsize=(20, 4))
+    figure, ax = plt.subplots(figsize=(20, 4))
     ax.plot(times, signal, linewidth=1.5)
     ax.set_title("ASK Modulation")
     ax.set_xlabel("Time")
@@ -77,7 +87,7 @@ def generate_graph_ASK(string):
     ax.set_ylim(-1.2, 1.2)
     ax.set_xticks(np.arange(len(string) + 1))
     ax.grid(True, linestyle='--', alpha=0.5)
-    plt.show()
+    _show_or_save(figure, "ask.png")
     return None
 
 
@@ -89,10 +99,11 @@ def generate_graph_BPSK(string):
         if string[i] != '0' and string[i] != '1':
             return "Invalid input, please enter a binary string."
 
-    signal = Modulation.generate_BPSK_modulated_signal(string)
+    encoded = Codification.generate_nrz_polar_signal(string)
+    signal = Modulation.generate_BPSK_modulated_signal(encoded)
     times = np.linspace(0, len(string), len(signal), endpoint=False)
 
-    _, ax = plt.subplots(figsize=(20, 4))
+    figure, ax = plt.subplots(figsize=(20, 4))
     ax.plot(times, signal, linewidth=1.5)
     ax.set_title("BPSK Modulation")
     ax.set_xlabel("Time")
@@ -100,7 +111,7 @@ def generate_graph_BPSK(string):
     ax.set_ylim(-1.2, 1.2)
     ax.set_xticks(np.arange(len(string) + 1))
     ax.grid(True, linestyle='--', alpha=0.5)
-    plt.show()
+    _show_or_save(figure, "bpsk.png")
     return None
 
 
@@ -113,7 +124,8 @@ def generate_graph_QPSK(string):
 
     if len(string) % 2 != 0:
         string += '0'
-    signal = Modulation.generate_QPSK_modulated_signal(string)
+    encoded = Codification.generate_nrz_polar_signal(string)
+    signal = Modulation.generate_QPSK_modulated_signal(encoded)
     number_of_symbols = len(string) // 2
     times = np.linspace(
         0,
@@ -122,7 +134,7 @@ def generate_graph_QPSK(string):
         endpoint=False
     )
 
-    _, ax = plt.subplots(figsize=(20, 4))
+    figure, ax = plt.subplots(figsize=(20, 4))
     ax.plot(times, signal, linewidth=1.5)
     ax.set_title("QPSK Modulation")
     ax.set_xlabel("Time (Symbols)")
@@ -130,7 +142,7 @@ def generate_graph_QPSK(string):
     ax.set_ylim(-1.2, 1.2)
     ax.set_xticks(np.arange(number_of_symbols + 1))
     ax.grid(True, linestyle='--', alpha=0.5)
-    plt.show()
+    _show_or_save(figure, "qpsk.png")
     return None
 
 
@@ -143,7 +155,8 @@ def generate_graph_16QAM(string):
 
     if len(string) % 4 != 0:
         string += '0' * (4 - (len(string) % 4))
-    signal = Modulation.generate_16QAM_modulated_signal(string)
+    encoded = Codification.generate_nrz_polar_signal(string)
+    signal = Modulation.generate_16QAM_modulated_signal(encoded)
     number_of_symbols = len(string) // 4
     times = np.linspace(
         0,
@@ -152,7 +165,7 @@ def generate_graph_16QAM(string):
         endpoint=False
     )
 
-    _, ax = plt.subplots(figsize=(20, 4))
+    figure, ax = plt.subplots(figsize=(20, 4))
     ax.plot(times, signal, linewidth=1.5)
     ax.set_title("16-QAM Modulation")
     ax.set_xlabel("Time (Symbols)")
@@ -160,7 +173,7 @@ def generate_graph_16QAM(string):
     ax.set_ylim(-1.2, 1.2)
     ax.set_xticks(np.arange(number_of_symbols + 1))
     ax.grid(True, linestyle='--', alpha=0.5)
-    plt.show()
+    _show_or_save(figure, "16qam.png")
     return None
 
 def enough_bits(string : str) -> str:
