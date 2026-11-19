@@ -19,6 +19,8 @@ CODIGOS = {
     "NRZ polar": (1, Codification.generate_nrz_polar_signal),
     "Manchester": (2, Codification.generate_manchester_signal),
 }
+BITS_POR_REPETICAO = 100_000
+REPETICOES = 5
 NIVEIS_DB = range(-4, 13, 2)
 NIVEIS_CONSTELACAO = (0, 6)
 
@@ -72,11 +74,15 @@ def gerar_comparacao(pasta=Path("comparacao_ruido")):
     pasta = Path(pasta)
     pasta.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(2026)
-    bits = rng.integers(0, 2, 40000)
+    entradas = rng.integers(0, 2, (REPETICOES, BITS_POR_REPETICAO), dtype=np.int8)
+    total_bits = entradas.size
+    ensaios = []
     linhas = []
-    fig_ber, paineis = plt.subplots(1, 2, figsize=(11, 4.8), sharey=True,
+    fig_ber, paineis = plt.subplots(1, 2, figsize=(12, 5.5), sharey=True,
                                     layout="constrained")
-    fig_ber.suptitle("Erros por bit de informação em canal AWGN")
+    tamanho = f"{BITS_POR_REPETICAO:,}".replace(",", ".")
+    fig_ber.suptitle(f"BER em canal AWGN\nMédia de {REPETICOES} repetições de {tamanho} bits"
+                     " · barras de ±1 desvio padrão entre repetições")
     for ax_ber, codigo in zip(paineis, CODIGOS):
         fig, eixos = plt.subplots(4, 2, figsize=(9, 13), sharex="row", sharey="row",
                                   layout="constrained")
@@ -84,30 +90,41 @@ def gerar_comparacao(pasta=Path("comparacao_ruido")):
         for modulacao, par, marcador in zip(MODULACOES, eixos, "os^D"):
             palavras, pontos = alfabeto(codigo, modulacao)
             largura = palavras.shape[1]
-            indices = bits.reshape(-1, largura) @ (2 ** np.arange(largura - 1, -1, -1))
-            enviados = pontos[indices]
-            taxas = []
-            for db in NIVEIS_DB:
-                # Eb = 1. Cada componente do ruído tem variância N0/2.
-                sigma = np.sqrt(0.5 * 10**(-db / 10))
-                ruido = rng.normal(size=enviados.shape) + 1j * rng.normal(size=enviados.shape)
-                recebidos = enviados + sigma * ruido
-                escolhas = detectar(recebidos, pontos)
-                erros = np.count_nonzero(palavras[escolhas].ravel() != bits)
-                taxas.append(erros / len(bits))
-                linhas.append((codigo, modulacao, db, len(bits), erros, taxas[-1]))
-                if db in NIVEIS_CONSTELACAO:
-                    ax = par[NIVEIS_CONSTELACAO.index(db)]
-                    contagem = desenhar_nuvem(ax, recebidos, enviados, pontos[escolhas],
-                                              np.unique(pontos))
-                    ax.set_title(f"{modulacao}   ·   {db} dB\n{contagem}", fontsize=10)
-                    ax.set_xlabel("Em fase (I)")
-                    ax.set_ylabel("Quadratura (Q)")
-            ax_ber.plot(NIVEIS_DB, taxas, marker=marcador, markersize=5,
-                        markerfacecolor="none", label=modulacao)
+            pesos = 2 ** np.arange(largura - 1, -1, -1)
+            contagens = np.zeros((REPETICOES, len(NIVEIS_DB)), dtype=int)
+            for repeticao, bits in enumerate(entradas):
+                enviados = pontos[bits.reshape(-1, largura) @ pesos]
+                for coluna, db in enumerate(NIVEIS_DB):
+                    # Eb = 1 nas coordenadas I/Q. Cada eixo recebe variância N0/2.
+                    sigma = np.sqrt(0.5 * 10**(-db / 10))
+                    ruido = rng.normal(size=enviados.shape) + 1j * rng.normal(size=enviados.shape)
+                    recebidos = enviados + sigma * ruido
+                    escolhas = detectar(recebidos, pontos)
+                    erros = np.count_nonzero(palavras[escolhas].ravel() != bits)
+                    contagens[repeticao, coluna] = erros
+                    ensaios.append((codigo, modulacao, db, repeticao + 1, len(bits),
+                                    erros, erros / len(bits)))
+                    if repeticao == 0 and db in NIVEIS_CONSTELACAO:
+                        ax = par[NIVEIS_CONSTELACAO.index(db)]
+                        contagem = desenhar_nuvem(ax, recebidos, enviados, pontos[escolhas],
+                                                  np.unique(pontos))
+                        ax.set_title(f"{modulacao}   ·   {db} dB\n{contagem}", fontsize=10)
+                        ax.set_xlabel("Em fase (I)")
+                        ax.set_ylabel("Quadratura (Q)")
+            totais = contagens.sum(axis=0)
+            medias = totais / total_bits
+            desvios = (contagens / BITS_POR_REPETICAO).std(axis=0, ddof=1)
+            for db, total, media, desvio in zip(NIVEIS_DB, totais, medias, desvios):
+                linhas.append((codigo, modulacao, db, total_bits, total, media,
+                               REPETICOES, BITS_POR_REPETICAO, desvio))
+            # BPSK e QPSK se sobrepõem. O quadrado maior mantém ambas visíveis.
+            ax_ber.errorbar(NIVEIS_DB, medias, yerr=[np.minimum(medias, desvios), desvios],
+                            marker=marcador, markersize=8 if modulacao == "BPSK" else 5,
+                            linestyle="--" if modulacao == "QPSK" else "-",
+                            markerfacecolor="none", capsize=2, label=modulacao)
         ax_ber.set_title(codigo)
         ax_ber.set_xlabel("Energia por bit / densidade de ruído, Eb/N₀ (dB)")
-        ax_ber.set_yscale("symlog", linthresh=1 / len(bits))
+        ax_ber.set_yscale("symlog", linthresh=1 / total_bits)
         ax_ber.set_ylim(bottom=0)
         ax_ber.set_xticks(list(NIVEIS_DB))
         ax_ber.grid(alpha=.25)
@@ -121,8 +138,13 @@ def gerar_comparacao(pasta=Path("comparacao_ruido")):
     plt.close(fig_ber)
     with (pasta / "erros_por_db.csv").open("w", newline="", encoding="utf-8") as arquivo:
         escritor = csv.writer(arquivo)
-        escritor.writerow(("codificacao", "modulacao", "eb_n0_db", "bits", "erros", "ber"))
+        escritor.writerow(("codificacao", "modulacao", "eb_n0_db", "bits", "erros", "ber",
+                           "repeticoes", "bits_por_repeticao", "desvio_padrao_ber"))
         escritor.writerows(linhas)
+    with (pasta / "repeticoes.csv").open("w", newline="", encoding="utf-8") as arquivo:
+        escritor = csv.writer(arquivo)
+        escritor.writerow(("codificacao", "modulacao", "eb_n0_db", "repeticao", "bits", "erros", "ber"))
+        escritor.writerows(ensaios)
     print(f"Gráficos e contagens de erros em {pasta.resolve()}")
 
 

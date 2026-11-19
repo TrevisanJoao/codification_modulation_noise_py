@@ -67,13 +67,17 @@ Rode `python comparacao_ruido.py` para gerar os resultados na pasta `comparacao_
 
 | Arquivo | O que observar |
 | --- | --- |
-| `ber_por_db.png` | Cada painel mostra uma codificação. As quatro curvas comparam a fração de bits de informação recebidos com erro, de −4 a 12 dB. Zero indica que todos os 40.000 bits daquela medição foram recuperados. |
+| `ber_por_db.png` | Cada painel mostra uma codificação. As quatro curvas comparam a fração de bits de informação recebidos com erro, de −4 a 12 dB. Os marcadores mostram a média e as barras indicam um desvio padrão amostral entre repetições (com limite inferior em zero). A escala vertical é logarítmica acima de 1/500.000 e linear até zero. Zero significa que nenhum erro foi observado nessa amostra. |
 | `constelacao_nrz_polar.png` e `constelacao_manchester.png` | Para cada modulação, compare os primeiros 800 símbolos a 0 e 6 dB na mesma escala. Os losangos indicam as posições ideais, os pontos azuis são acertos e as cruzes vermelhas são erros de símbolo. Um erro de símbolo pode afetar mais de um bit. |
-| `erros_por_db.csv` | Contagens de bits transmitidos e errados e BER para cada combinação de codificação, modulação e nível de ruído. |
+| `erros_por_db.csv` | Contagens totais, BER média e desvio padrão da BER para cada combinação de codificação, modulação e nível de ruído. |
+| `repeticoes.csv` | Contagens e BER de cada uma das cinco repetições de 100.000 bits. |
 
-O eixo horizontal usa Eb/N₀, com energia média unitária por **bit de informação** em todas as combinações. As mesmas entradas aleatórias são usadas em toda a comparação, com semente fixa para reproduzir os gráficos. O ruído é gaussiano independente nos eixos I e Q, com variância N₀/2 em cada eixo. [Relação entre energia por bit e por símbolo](https://www.mathworks.com/help/comm/ug/awgn-channel.html).
+O eixo horizontal usa Eb/N₀, com energia média unitária por **bit de informação** em todas as combinações. Cada repetição usa uma nova sequência de bits aleatórios, compartilhada por todas as modulações, codificações e níveis de ruído. Cada transmissão recebe uma nova realização de ruído. A semente 2026 permite reproduzir a simulação. O ruído é gaussiano independente nos eixos I e Q, com variância N₀/2 em cada eixo. [Relação entre energia por bit e por símbolo](https://www.mathworks.com/help/comm/ug/awgn-channel.html).
 
-O simulador extrai as posições I/Q das formas de onda do projeto. O receptor escolhe a sequência válida mais próxima das amostras recebidas. No Manchester, os dois níveis que representam cada bit são avaliados juntos. Isso restringe as posições possíveis em QPSK e 16-QAM e explica por que as nuvens podem ter menos centros. As curvas comparam erros para a mesma energia por bit, sem igualar a taxa de transmissão.
+O `main.py` usa SNR por amostra para simular a forma de onda no canal de `channel.py`. A varredura de `comparacao_ruido.py` projeta as 500 amostras de cada símbolo nas duas referências da portadora e calcula a energia de cada palavra somando I² + Q² sobre seus símbolos. O alfabeto é reescalado para que a energia média da palavra seja igual ao número de bits de informação que ela representa. Nessa escala, o desvio padrão por componente é √(1/(2 × 10^(dB/10))). A projeção já incorpora a amostragem da portadora.
+
+A 6 dB com NRZ polar, as BERs medidas foram 0,2360% (BPSK), 0,2414% (QPSK) e 2,7626% (16-QAM). Os valores analíticos em AWGN para detecção coerente e mapeamento Gray são 0,2388% para BPSK e QPSK e 2,7871% para 16-QAM. [Expressões analíticas de BER em AWGN](https://www.mathworks.com/help/comm/ug/analytical-expressions-used-in-berawgn-function-and-bit-error-rate-analysis-app.html).
+O receptor escolhe a sequência válida mais próxima das amostras recebidas. No Manchester, os dois níveis que representam cada bit são avaliados juntos. Isso restringe as posições possíveis em QPSK e 16-QAM e explica por que as nuvens podem ter menos centros. As curvas comparam erros para a mesma energia por bit, sem igualar a taxa de transmissão.
 
 ## 3. Gere um gráfico com seus próprios bits
 
