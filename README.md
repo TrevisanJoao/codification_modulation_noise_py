@@ -17,7 +17,7 @@ https://github.com/user-attachments/assets/3b10659a-fb76-4d31-bc2f-e61848909ceb
 | QPSK | Agrupa os bits em pares e usa quatro fases. |
 | 16-QAM | Agrupa os bits de quatro em quatro e varia as componentes em fase e em quadratura. |
 
-Apesar do nome do repositório, a versão atual ainda não implementa adição de ruído ao sinal.
+O projeto simula ruído branco gaussiano aditivo (AWGN) e ruído em rajadas. A comparação por dB usa AWGN.
 
 ## 1. Prepare o ambiente
 
@@ -59,13 +59,25 @@ Com o ambiente virtual ativo, execute:
 python main.py
 ```
 
-O programa usa a sequência `1101001110010110` e exibe cinco gráficos nesta ordem: ASK, BPSK, QPSK, 16-QAM e NRZ polar. Em uma execução comum pelo terminal, feche a janela de cada gráfico para abrir o próximo.
+O programa transmite a mensagem `Hello World!` com NRZ polar e BPSK e imprime a mensagem recuperada e a taxa de erro para AWGN e rajadas.
 
-O exemplo não pede dados pelo terminal. Para trocar a sequência, edite os valores passados às funções em `main.py`.
+### Compare os erros e as constelações
+
+Rode `python comparacao_ruido.py` para gerar os resultados na pasta `comparacao_ruido/`. Use `python exemplo.py` para ver também as formas de onda no tempo.
+
+| Arquivo | O que observar |
+| --- | --- |
+| `ber_por_db.png` | Cada painel mostra uma codificação. As quatro curvas comparam a fração de bits de informação recebidos com erro, de −4 a 12 dB. Zero indica que todos os 40.000 bits daquela medição foram recuperados. |
+| `constelacao_nrz_polar.png` e `constelacao_manchester.png` | Para cada modulação, compare os primeiros 800 símbolos a 0 e 6 dB na mesma escala. Os losangos indicam as posições ideais, os pontos azuis são acertos e as cruzes vermelhas são erros de símbolo. Um erro de símbolo pode afetar mais de um bit. |
+| `erros_por_db.csv` | Contagens de bits transmitidos e errados e BER para cada combinação de codificação, modulação e nível de ruído. |
+
+O eixo horizontal usa Eb/N₀, com energia média unitária por **bit de informação** em todas as combinações. As mesmas entradas aleatórias são usadas em toda a comparação, com semente fixa para reproduzir os gráficos. O ruído é gaussiano independente nos eixos I e Q, com variância N₀/2 em cada eixo. [Relação entre energia por bit e por símbolo](https://www.mathworks.com/help/comm/ug/awgn-channel.html).
+
+O simulador extrai as posições I/Q das formas de onda do projeto. O receptor escolhe a sequência válida mais próxima das amostras recebidas. No Manchester, os dois níveis que representam cada bit são avaliados juntos. Isso restringe as posições possíveis em QPSK e 16-QAM e explica por que as nuvens podem ter menos centros. As curvas comparam erros para a mesma energia por bit, sem igualar a taxa de transmissão.
 
 ## 3. Gere um gráfico com seus próprios bits
 
-Crie um arquivo chamado `exemplo.py` na mesma pasta de `main.py`:
+Para gerar um gráfico isolado, salve o trecho abaixo em `meu_grafico.py`, na mesma pasta de `main.py`:
 
 ```python
 import Graph_Generation
@@ -78,7 +90,7 @@ Graph_Generation.generate_graph_manchester(bits)
 Execute com:
 
 ```bash
-python exemplo.py
+python meu_grafico.py
 ```
 
 Para escolher outra técnica, substitua a última linha por uma destas chamadas:
@@ -116,7 +128,7 @@ Para uma conversão de ida e volta previsível, use texto ASCII, sem acentos ou 
 
 | Arquivo | Responsabilidade |
 | --- | --- |
-| `main.py` | Executa os cinco gráficos de exemplo. |
+| `main.py` | Compara uma transmissão BPSK sob AWGN e ruído em rajadas. |
 | `Codification.py` | Gera os sinais Manchester e NRZ polar. |
 | `Modulation.py` | Gera os sinais ASK, BPSK, QPSK e 16-QAM. |
 | `Graph_Generation.py` | Valida a entrada e exibe os gráficos. |
