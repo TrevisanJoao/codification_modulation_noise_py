@@ -2,6 +2,10 @@
 
 Projeto para visualizar como uma sequência de bits pode ser representada por sinais. Os gráficos são gerados com Matplotlib, e os cálculos usam NumPy.
 
+## Video demonstrativo
+
+https://github.com/user-attachments/assets/3b10659a-fb76-4d31-bc2f-e61848909ceb
+
 ## O que você pode visualizar
 
 | Técnica | Como representa os bits |
